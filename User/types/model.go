@@ -1,9 +1,11 @@
 package types
 
 type User struct {
-	ID       int    `bson:"_id" json:"id"`
-	Username string `bson:"username" json:"username"`
-	Password string `bson:"password" json:"password"`
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	RoleID   int    `json:"role_id"`
+	RoleName string `json:"role_name"`
 }
 
 type Order struct {

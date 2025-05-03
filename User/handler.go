@@ -55,6 +55,7 @@ func (h *Handler) Register(c echo.Context) error {
 	u := &types.User{
 		Username: req.Username,
 		Password: string(hashed),
+		RoleID:   1,
 	}
 
 	if err := h.service.Register(c.Request().Context(), u); err != nil {
@@ -89,7 +90,7 @@ func (h *Handler) Login(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Şifre hatalı"})
 	}
 
-	token, err := auth.GenerateJWT(user.ID, user.Username)
+	token, err := auth.GenerateJWT(user.ID, user.Username, user.RoleName)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Token oluşturulamadı"})
 	}

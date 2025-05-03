@@ -16,18 +16,25 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (r *Repository) GetByUsername(ctx context.Context, username string) (*types.User, error) {
-	row := r.db.QueryRow("SELECT id, username, password FROM users WHERE username=$1", username)
+	row := r.db.QueryRow(`
+		SELECT u.id, u.username, u.password, r.id, r.name
+		FROM users u
+		JOIN roles r ON u.role_id = r.id
+		WHERE u.username = $1
+	`, username)
+
 	var u types.User
-	if err := row.Scan(&u.ID, &u.Username, &u.Password); err != nil {
+	if err := row.Scan(&u.ID, &u.Username, &u.Password, &u.RoleID, &u.RoleName); err != nil {
 		return nil, err
 	}
 	return &u, nil
 }
+
 func (r *Repository) Create(ctx context.Context, user *types.User) error {
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO users (username,password) 
-		VALUES ($1, $2)
-	`, user.Username, user.Password)
+		INSERT INTO users (username,password,role_id) 
+		VALUES ($1, $2, $3)
+	`, user.Username, user.Password, user.RoleID)
 
 	return err
 }
