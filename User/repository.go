@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 )
 
 type Repository struct {
@@ -32,9 +33,9 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (*types
 
 func (r *Repository) Create(ctx context.Context, user *types.User) error {
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO users (username,password,role_id) 
-		VALUES ($1, $2, $3)
-	`, user.Username, user.Password, user.RoleID)
+  INSERT INTO users (username, password, role_id, first_name, last_name)
+  VALUES ($1, $2, $3, $4, $5)
+`, user.Username, user.Password, user.RoleID, user.FirstName, user.LastName)
 
 	return err
 }
@@ -42,9 +43,9 @@ func (r *Repository) Create(ctx context.Context, user *types.User) error {
 func (r *Repository) Update(ctx context.Context, id int, user *types.User) error {
 	res, err := r.db.ExecContext(ctx, `
 		UPDATE users 
-		SET username = $1, password = $2 
-		WHERE id = $3
-	`, user.Username, user.Password, id)
+		SET username = $1, password = $2, first_name = $3, last_name = $4, role_id = $5
+		WHERE id = $6
+	`, user.Username, user.Password, user.FirstName, user.LastName, user.RoleID, id)
 
 	if err != nil {
 		return err
@@ -79,4 +80,51 @@ func (r *Repository) Delete(ctx context.Context, id int) error {
 	}
 
 	return nil
+}
+
+func (r *Repository) GetAllUsers(ctx context.Context) ([]*types.User, error) {
+	log.Println("Executing query to fetch users")
+	rows, err := r.db.QueryContext(ctx, `
+        SELECT u.id, u.username, u.password, u.role_id, r.name AS role_name, u.first_name, u.last_name, u.created_at
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+    `)
+	if err != nil {
+		log.Printf("Error executing query: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*types.User
+	for rows.Next() {
+		var u types.User
+		if err := rows.Scan(&u.ID, &u.Username, &u.Password, &u.RoleID, &u.RoleName, &u.FirstName, &u.LastName, &u.CreatedAt); err != nil {
+			log.Printf("Error scanning row: %v", err)
+			return nil, err
+		}
+		users = append(users, &u)
+	}
+
+	if len(users) == 0 {
+		log.Println("No users found")
+	}
+	return users, nil
+}
+
+func (r *Repository) GetByID(ctx context.Context, userID int) (*types.User, error) {
+	row := r.db.QueryRow(`
+		SELECT u.id, u.username, u.password, u.role_id, r.name AS role_name, u.first_name, u.last_name, u.created_at
+		FROM users u
+		JOIN roles r ON u.role_id = r.id
+		WHERE u.id = $1
+	`, userID)
+
+	var u types.User
+	if err := row.Scan(&u.ID, &u.Username, &u.Password, &u.RoleID, &u.RoleName, &u.FirstName, &u.LastName, &u.CreatedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("Kullanıcı bulunamadı")
+		}
+		return nil, err
+	}
+	return &u, nil
 }

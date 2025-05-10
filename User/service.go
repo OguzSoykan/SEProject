@@ -39,3 +39,11 @@ func (s *Service) UpdateUser(ctx context.Context, id int, user *types.User) erro
 func (s *Service) DeleteUser(ctx context.Context, id int) error {
 	return s.repo.Delete(ctx, id)
 }
+
+func (s *Service) GetAllUsers(ctx context.Context) ([]*types.User, error) {
+	return s.repo.GetAllUsers(ctx)
+}
+
+func (s *Service) GetUserByID(ctx context.Context, userID int) (*types.User, error) {
+	return s.repo.GetByID(ctx, userID)
+}

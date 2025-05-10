@@ -8,7 +8,9 @@ package main
 
 import (
 	"context"
+	"github.com/labstack/echo/v4/middleware"
 	"log"
+	"net/http"
 	"os"
 
 	menu "SEProject/Menu"
@@ -46,6 +48,14 @@ func main() {
 	//defer config.DB.Close()
 	// 3. Echo Web Framework başlatılıyor
 	e := echo.New()
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:8080"}, // Swagger'ın çalıştığı URL'yi ve API URL'nizi buraya ekleyin
+		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+		AllowCredentials: true, // Eğer JWT veya cookies kullanıyorsanız true olmalı
+	}))
+
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// USER
